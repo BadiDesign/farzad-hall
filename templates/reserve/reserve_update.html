@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block body %}
+
+	<div class="d-flex flex-column-fluid">
+		<div class="container">
+			<div class="row">
+				<div class="col-md-12">
+					<!--begin::Card-->
+					<div class="card card-custom">
+						<div class="card-header">
+							<h3 class="card-title">
+								Update
+								{{ model_name }}
+							</h3>
+						</div>
+						<form>
+							<div class="card-body">
+						<div class="row">
+							{% include 'component/input.html' with xl=12 input=form.title %}
+							{% include 'component/input.html' with xl=12 input=form.reserve_date %}
+							{% include 'component/input.html' with xl=12 input=form.reserve_time %}
+							{% include 'component/input.html' with xl=12 input=form.description %}
+						</div>
+							</div>
+							<div class="card-footer">
+								<a href="../create" class="btn btn-secondary">بازگشت</a>
+                                <a href="../detail/{{ object.pk }}" class="btn btn-info">
+                                    نسخه چاپی
+                                </a>
+								<button type="button" id="submitter" class="btn btn-primary">
+									بروزرسانی
+									{{ model_name }}
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--end::Container-->
+	</div>
+{% endblock %}
+{% block script %}
+	<script src="{% static 'badi_utils/js/image-field.js' %}"></script>
+	<script>
+        $("#id_description").attr("rows", 5)
+        $('.card select').select2({
+            dir: "rtl"
+        });
+        $('#submitter').click(function (e) {
+            const button = this;
+            ApiAjax({
+                url: '{{ api_url }}',
+                pk: getUrlPk(),
+                form: 'form',
+                method: 'PUT',
+                file: true,
+                button: button,
+                success_url: '../create',
+                success_message: '{{ model_name }} با موفقیت بروزرسانی شد!',
+                error: function (e) {
+                    console.log(e)
+                }
+            })
+        })
+
+	</script>
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% load appfilter %}
+{% load static %}
+{% block body %}
+    <style>
+        .fc-day-grid-container {
+            overflow: auto !important;
+        }
+
+        .fc-button-group {
+            direction: rtl;
+        }
+
+        .fc-title {
+            direction: rtl;
+        }
+
+        .fc-unthemed td.fc-today:before {
+            margin: 40% 0 0 0;
+            opacity: 0.1;
+        }
+    </style>
+    <div class="d-flex flex-column-fluid">
+        <div class="container-fluid">
+            <div class="card card-custom">
+                <div class="card-header">
+                    <h3 class="card-title font-weight-bolder">
+                        رزرو سانس
+                    </h3>
+                    <div class="card-toolbar">
+                        <a href="{% url 'package_list' %}" class="btn btn-light-info mx-1 btn-icon"
+                           data-toggle="tooltip" data-theme="dark" title="خرید پکیج رزرو"
+                        >
+                            <i class="fa fa-cart-plus"></i>
+
+                        </a>
+                        <button data-toggle="tooltip" data-theme="dark" title="افزایش شارژ" type="button"
+                                class="btn btn-light-success btn-icon mx-1 charge-modal">
+                            <i class="fa fa-user-plus"></i>
+
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="date-sanses" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+         aria-hidden="true">
+        <div id="date-sanses-app" class="modal-dialog modal-xl" role="document">
+            <div class="modal-content border-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">رزرو های سانس [[sans]]</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <i aria-hidden="true" class="ki ki-close"></i>
+                    </button>
+                </div>
+                <div class="modal-body" :class="{'loading' : loading}">
+                    {% include 'shared/loader.html' %}
+                    <table class="table table-striped table-custom-border text-center table-rounded table-borderless table-thead-primary">
+                        <thead>
+                        <tr>
+                            <th>ردیف</th>
+                            <th>ورزشکار</th>
+                            <th>شماره تماس</th>
+                            <th>لغو رزرو</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <template v-if="reservers.length">
+                            <tr v-for="(reserve, key) in reservers">
+                                <td>[[key + 1]]</td>
+                                <td>[[reserve.fullname]]</td>
+                                <td>[[reserve.mobile_number]]</td>
+                                <td>
+                                    <button class="btn btn-light-danger btn-icon btn-sm" data-toggle="tooltip"
+                                            @click.prevent="cancelReserve(reserve)" data-theme="dark"
+                                            title="لغو رزرو">
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                        <template v-else>
+                            <tr>
+                                <th colspan="6">در حال حاضر در این تاریخ سانس جهت رزرو موجود نمی باشد</th>
+                            </tr>
+                        </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block script %}
+
+    <script src='/static/assets/plugins/custom/moment.min.js'></script>
+    <script src='/static/assets/plugins/custom/moment-jalaali.js'></script>
+    <script src="{% static 'assets/plugins/custom/fullcalendar/fullcalendar.bundle.js' %}"></script>
+    <script src="{% static 'assets/plugins/custom/locale-all.js' %}"></script>
+
+    <script>
+        let events;
+        let last_start = null;
+        const $calendar = $('#calendar');
+        const refreshEvents = (start, end) => {
+            $calendar.fullCalendar('removeEvents');
+            swalFireLoading()
+            ApiAjaxReader({
+                url: ALL_SANS_OF_MONTH_API_URL,
+                success_message: false,
+                data: {
+                    start,
+                    end,
+                },
+                success: (data) => {
+                    events = data;
+                    for (const e in events) {
+                        $calendar.fullCalendar('renderEvent', events[e], true);
+                    }
+                    swalFireClose()
+                },
+                error: (error) => {
+                    swalFireError()
+                }
+            })
+        }
+        const handleMonthChange = (info) => {
+            const start = new Date(info.start).toLocaleDateString('en');
+            const end = new Date(info.end).toLocaleDateString('en');
+            if (start === last_start) {
+
+            } else {
+                last_start = start;
+                refreshEvents(start, end)
+            }
+        }
+        jQuery(document).ready(function () {
+            var initialLocaleCode = 'fa';
+            const calendar = $calendar.fullCalendar({
+                plugins: ['bootstrap', 'interaction', 'list'],
+                themeSystem: 'bootstrap',
+                displayEventTime: false,
+                longPressDelay: 0,
+                header: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'month'
+                },
+                buttonIcons: {
+                    prev: ' icon-md fas fa-angle-right',
+                    next: ' icon-md fas fa-angle-left',
+                },
+                isJalaali: true,
+                defaultDate: new Date().toLocaleDateString(),
+                locale: initialLocaleCode,
+                events,
+                {#editable: true,#}
+                eventLimit: true, // allow "more" link when too many events
+                eventLimitText: function (option) {
+                    return 'تعداد سانس: ' + option
+                },
+                views: {
+                    month: {
+                        eventLimit: 1 // adjust to 6 only for timeGridWeek/timeGridDay
+                    }
+                },
+                navLinks: true, // can click day/week names to navigate views
+                selectable: true,
+                selectHelper: true,
+                viewRender: handleMonthChange,
+                select: function (start, end) {
+                },
+                eventClick: function (info) {
+                    DateSansVueApp.getdateReservers(info);
+                },
+            });
+        });
+
+
+    </script>
+
+    <script>
+        const $modalSans = $('#date-sanses');
+        const DateSansVueApp = new Vue({
+            delimiters: ['[[', ']]'],
+            data() {
+                return {
+                    loading: true,
+                    reservers: [],
+                    sans: '',
+                }
+            },
+            el: '#date-sanses-app',
+            created: function (e) {
+            },
+            mounted: function () {
+
+            },
+            methods: {
+                getdateReservers(info) {
+                    console.log(info)
+                    $modalSans.modal('show');
+                    this.reservers = [];
+                    this.sans = new Date(info.start).toLocaleDateString('fa') +' - '+ info.start_time+' تا '+ info.end_time;
+                    this.loading = true;
+                    ApiAjaxReader({
+                        url: ALL_RESERVES_DATE_OBJECTS_API_URL,
+                        pk: info.id,
+                        method: 'POST',
+                        success: (data) => {
+                            console.log(data);
+                            this.reservers = data;
+                            this.loading = false;
+                        },
+                        error: function (e) {
+                            swalFireError();
+                            this.loading = false;
+                        }
+                    })
+                },
+                cancelReserve(reserve) {
+                    console.log('cancelReserve', reserve);
+                    this.loading = true;
+                    swal.fire({
+                        title: `آیا از لغو رزرو ${reserve.fullname} مطمئن هستید ؟`,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'بله! لغو کن',
+                        cancelButtonText: 'بازگشت',
+                        showLoaderOnConfirm: true,
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            Swal.fire({
+                                title: 'در حال لغو رزرو...',
+                                html: 'لطفا منتظر بمانید.',
+                                timerProgressBar: true,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                    ApiAjax({
+                                        url: SANS_DATE_CANCEL_API_URL,
+                                        pk: reserve.id,
+                                        method: 'DELETE',
+                                        success_message: false,
+                                        modal: "#date-sanses",
+                                        success: (data) => {
+                                            swalFireSuccess();
+                                            this.loading = false;
+                                            refreshEvents()
+                                        },
+                                        error: (error) => {
+                                            if (error['ok'] === false) {
+                                                swalFireError(error['reason']);
+                                                $modalSans.modal('hide')
+                                            } else
+                                                swalFireError();
+                                            this.loading = false;
+                                        }
+                                    });
+                                },
+                            })
+                        } else {
+
+                            this.loading = false;
+                        }
+                    })
+                }
+            },
+            computed: {}
+        })
+    </script>
+{% endblock %}

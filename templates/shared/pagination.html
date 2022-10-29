@@ -1,0 +1,58 @@
+{% load appfilter %}
+<div class="text-left ltr d-flex align-items-center justify-content-center ml-2">
+	{% get_query_string as QUERY_STRING %}
+	{% if page_obj.has_previous %}
+		<a href="{{ url_page }}?page={{ page_obj.previous_page_number }}"
+		   class="btn btn-sm btn-icon mr-1 btn-secondary"><i
+				class="fa fa-angle-left"></i>
+		</a>
+		{% if page_obj.number > 3 %}
+			{% if page_obj.number > 4 %}
+				<a class="btn btn-sm btn-icon mr-1 disabled btn-secondary noHover btn-secondary">
+					<span>...</span>
+				</a>
+			{% else %}
+				<a class="btn btn-sm btn-icon mr-1 btn-secondary" data-param="page" data-value="1"
+				   href="{{ url_page }}?page=1">1</a>
+			{% endif %}
+		{% endif %}
+	{% else %}
+		<a href="#"
+		   class="btn btn-sm btn-icon mr-1 btn-light disabled noHover">
+			<i class="fa fa-angle-left"></i>
+		</a>
+	{% endif %}
+	{% for num in page_obj.paginator.page_range %}
+		{% if page_obj.number == num %}
+			<a class="btn btn-sm btn-icon mr-1 btn-primary noHover" data-param="page" data-value="{{ num }}"
+			   href="{{ url_page }}?page={{ num }}">{{ num }}</a>
+		{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+			<a class="btn btn-sm btn-icon mr-1 btn-secondary" data-param="page" data-value="{{ num }}"
+			   href="{{ url_page }}?page={{ num }}">{{ num }}</a>
+		{% endif %}
+	{% endfor %}
+	{% if page_obj.has_next %}
+		{% if page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
+			<span>...</span>
+			<a class="btn btn-sm btn-icon mr-1 btn-secondary"
+			   data-param="page" data-value="{{ page_obj.paginator.num_pages }}"
+			   href="{{ url_page }}?page={{ page_obj.paginator.num_pages }}">
+				{{ page_obj.paginator.num_pages }}</a>
+		{% elif page_obj.number < page_obj.paginator.num_pages|add:'-2' %}
+			<a class="btn btn-sm btn-icon mr-1 btn-secondary"
+			   data-param="page" data-value="{{ page_obj.paginator.num_pages }}"
+			   href="{{ url_page }}?page={{ page_obj.paginator.num_pages }}">
+				{{ page_obj.paginator.num_pages }}</a>
+		{% endif %}
+		<a href="{{ url_page }}?page={{ page_obj.next_page_number }}"
+		   class="btn btn-secondary btn-sm mr-1 btn-icon btn-secondary"
+		   data-param="page" data-value="{{ page_obj.next_page_number }}">
+			<i class="fa fa-angle-right"></i>
+		</a>
+	{% else %}
+		<a href="#"
+		   class="btn btn-sm btn-icon mr-1 btn-light disabled noHover">
+			<i class="fa fa-angle-right"></i>
+		</a>
+	{% endif %}
+</div>

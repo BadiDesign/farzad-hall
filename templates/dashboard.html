@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load appfilter %}
+{% load static %}
+{% block body %}
+	<style>
+        .fc-day-grid-container {
+            overflow: auto !important;
+        }
+
+        .fc-button-group {
+            direction: rtl;
+        }
+
+        .fc-title {
+            direction: rtl;
+        }
+
+        .fc-unthemed td.fc-today:before {
+            margin: 40% 0 0 0;
+            opacity: 0.1;
+        }
+
+        .fc-day-grid-event .fc-content {
+            white-space: normal !important;
+        }
+	</style>
+	<div class="d-flex flex-column-fluid">
+		<div class="container-fluid">
+			<div class="card card-custom">
+				<div class="card-header">
+					<h3 class="card-title font-weight-bolder">
+						رزرو های تالار فرزاد
+					</h3>
+					<div class="card-toolbar">
+						<a href="/" class="btn btn-light-info mx-1 btn-icon"
+						   data-toggle="tooltip" data-theme="dark" title="ثبت رزرو جدید"
+						>
+							<i class="fa fa-plus"></i>
+
+						</a>
+					</div>
+				</div>
+				<div class="card-body">
+					<div class="row">
+						<div class="col-6">
+							<div class="form-group">
+								<label class="col-form-label">ماه:</label>
+								<select id="id_month" class="form-control">
+									<option value="1">فروردین</option>
+									<option value="2">اردیبهشت</option>
+									<option value="3">خرداد</option>
+									<option value="4">تیر</option>
+									<option value="5">مرداد</option>
+									<option value="6">شهریور</option>
+									<option value="7">مهر</option>
+									<option value="8">آبان</option>
+									<option value="9">آذر</option>
+									<option value="10">دی</option>
+									<option value="11">بهمن</option>
+									<option value="12">اسفند</option>
+								</select>
+							</div>
+						</div>
+						<div class="col-6">
+							<div class="form-group">
+								<label class="col-form-label">سال:</label>
+								<input type="text" id="id_year" class="form-control">
+							</div>
+						</div>
+					</div>
+					<div id="calendar"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+{% block script %}
+	<script>
+        $('#id_year').val(toEnglishDigit(new Date().toLocaleString('fa')).split('/')[0]).change().on('change', function (e) {
+            redirectCalendarDate()
+        })
+        $('#id_month').val(toEnglishDigit(new Date().toLocaleString('fa')).split('/')[1]).change().on('change', function (e) {
+			redirectCalendarDate()
+        })
+	</script>
+	<script src='/static/assets/plugins/custom/moment.min.js'></script>
+	<script src='/static/assets/plugins/custom/moment-jalaali.js'></script>
+	<script src="{% static 'assets/plugins/custom/fullcalendar/fullcalendar.bundle.js' %}"></script>
+	<script src="{% static 'assets/plugins/custom/locale-all.js' %}"></script>
+
+	<script>
+        let events;
+        let last_start = null;
+        const $calendar = $('#calendar');
+        const refreshEvents = (start, end) => {
+            $calendar.fullCalendar('removeEvents');
+            swalFireLoading()
+            ApiAjaxReader({
+                url: '/api/v1/reserve/calendar',
+                success_message: false,
+                data: {
+                    start,
+                    end,
+                },
+                success: (data) => {
+                    events = data;
+                    for (const e in events) {
+                        $calendar.fullCalendar('renderEvent', events[e], true);
+                    }
+                    swalFireClose()
+                },
+                error: (error) => {
+                    swalFireError()
+                }
+            })
+        }
+        const handleMonthChange = (info) => {
+            const start = new Date(info.start).toLocaleDateString('en');
+            const end = new Date(info.end).toLocaleDateString('en');
+            if (start === last_start) {
+
+            } else {
+                last_start = start;
+                refreshEvents(start, end)
+            }
+        }
+        const initialLocaleCode = 'fa';
+        const calendar = $calendar.fullCalendar({
+            plugins: ['bootstrap', 'interaction', 'list'],
+            themeSystem: 'bootstrap',
+            displayEventTime: false,
+            longPressDelay: 0,
+            header: {
+                left: ' today',
+                center: 'title',
+                right: ''
+            },
+            buttonIcons: {
+                prev: ' icon-md fas fa-angle-right',
+                next: ' icon-md fas fa-angle-left',
+            },
+            isJalaali: true,
+            defaultDate: new Date().toLocaleDateString(),
+            locale: initialLocaleCode,
+            events,
+            {#editable: true,#}
+            eventLimit: true, // allow "more" link when too many events
+            eventLimitText: function (option) {
+                return 'تعداد رزرو: ' + option
+            },
+            views: {
+                month: {
+                    eventLimit: 1 // adjust to 6 only for timeGridWeek/timeGridDay
+                }
+            },
+            navLinks: true, // can click day/week names to navigate views
+            selectable: true,
+            selectHelper: true,
+            viewRender: handleMonthChange,
+            select: function (start, end) {
+            },
+            eventClick: function (info) {
+                window.open("/dashboard/reserve/update/" + info.id, '_blank')
+            },
+        });
+        const redirectCalendarDate = () => {
+            const persianDate = $('#id_year').val() + '/' + $('#id_month').val() + '/01'
+            const newDate = toEnglishDate(persianDate)
+            $calendar.fullCalendar('gotoDate', newDate)
+        }
+	</script>
+
+	<script>
+
+	</script>
+{% endblock %}

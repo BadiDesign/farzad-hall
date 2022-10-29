@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block body %}
+    <div class="d-flex flex-column-fluid">
+        <!--begin::Container-->
+        <div class="container-fluid" id="vue-app">
+            <div class="d-flex flex-row">
+                <!--begin::Content-->
+                <div class="flex-row-fluid mr-lg-4 card-stretch">
+                    <div class="card card-custom">
+                        <div>
+                            <div class="card-body" v-if="search">
+                                <div class="d-flex align-items-center mb-5">
+                                    <div>
+                                        <h2 class="text-dark mb-5 font-weight-bolder">
+                                            Custom Search
+                                            <a :href="'{% url 'user_detail' pk=0 %}' + search.user.id"
+                                               class="font-weight-light border-bottom border-primary"
+                                               target="_blank">
+                                                (by [[search.user.first_name]] [[search.user.last_name]])
+                                            </a>
+
+                                        </h2>
+                                        <a :href="'{% url 'search_detail' pk=0 %}' + search.id"
+                                           target="_blank"
+                                           class="font-weight-bolder font-size-h2 text-dark-75 text-hover-primary">
+                                            [[search.breed]]
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xl-3 col-lg-4 col-6 mb-3">
+                                        <div class="d-flex border rounded p-2">
+                                            <p class="mb-0 font-weight-bolder">Searched at:</p>
+                                            <p class="mb-0 mr-auto">
+                                                [[search.created_at | toSince]] ago
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-3 col-lg-4 col-6 mb-3">
+                                        <div class="d-flex border rounded p-2">
+                                            <p class="mb-0 font-weight-bolder">Point Reduced:</p>
+                                            <p class="mb-0 mr-auto">
+                                                [[search.point_reduced]] point
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-3 col-lg-4 col-6 mb-3">
+                                        <div class="d-flex border rounded p-2">
+                                            <p class="mb-0 font-weight-bolder">Priority:</p>
+                                            <p class="mb-0 mr-auto">
+                                                [[search.priority]]
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-3 col-lg-4 col-6 mb-3" v-if="search.data">
+                                        <div class="d-flex border rounded p-2">
+                                            <p class="mb-0 font-weight-bolder">Properties:</p>
+                                            <p class="mb-0 mr-auto">
+                                                [[search.data.properties.length]]
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row" v-if="search.data">
+                                    <template
+                                            v-for="property in search.data.properties">
+                                        <div class="col-xl-4 col-lg-6 col-md-4 col-sm-6">
+                                            <range-slider
+                                                    :title="getTitle(property.property)"
+                                                    :value="property.value"
+                                            />
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Content-->
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+{% block script %}
+    <script src="{% static 'assets/plugins/custom/datatables/datatables.bundle.js' %}" type="text/javascript"></script>
+    <script src="{% static 'custom/datatable.js' %}" type="text/javascript"></script>
+
+    <script>
+        window.data_table_cool_options['pageLength'] = 10
+        const vueApp = new Vue({
+            delimiters: ['[[', ']]'],
+            el: '#vue-app',
+            data() {
+                return {
+                    search: {
+                        groups: []
+                    },
+                    got_data: [],
+                    data: [],
+                }
+            },
+            mounted: function () {
+                this.getAnimalData()
+            },
+            watch: {},
+            methods: {
+                getAnimalData() {
+                    ApiAjaxReader({
+                        url: SEARCH_API_URL,
+                        pk: getUrlPk(),
+                        method: 'GET',
+                        success_message: false,
+                        success: (res) => {
+                            res['data'] = JSON.parse(res.data)
+                            this.search = res
+                        }
+                    })
+                },
+                getTitle(key){
+                    return this.search['search_properties'].find(x=>x.id === key).title
+                }
+
+            },
+        });
+    </script>
+
+
+
+    <script>
+        "use strict";
+
+        // Class definition
+        var KTProfile = function () {
+            // Elements
+            var avatar;
+            var offcanvas;
+
+            // Private functions
+            var _initAside = function () {
+                // Mobile offcanvas for mobile mode
+                offcanvas = new KTOffcanvas('kt_profile_aside', {
+                    overlay: true,
+                    baseClass: 'offcanvas-mobile',
+                    //closeBy: 'kt_user_profile_aside_close',
+                    toggleBy: 'kt_subheader_mobile_toggle'
+                });
+            }
+
+            var _initForm = function () {
+                avatar = new KTImageInput('kt_profile_avatar');
+            }
+
+            return {
+                // public functions
+                init: function () {
+                    _initAside();
+                    _initForm();
+                }
+            };
+        }();
+
+        jQuery(document).ready(function () {
+            KTProfile.init();
+        });
+    </script>
+{% endblock %}
