@@ -31,6 +31,11 @@ class ReserveViewSet(DynamicModelApi):
             })
         return Response(data)
 
+    def filter_queryset(self, qs):
+        if self.action == 'datatable':
+            return self.filterset_class(self.request.data).qs
+        return super().filter_queryset(qs)
+
 
 class CustomPagination(PageNumberPagination):
     page_size = 9

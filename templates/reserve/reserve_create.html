@@ -25,6 +25,7 @@
 							</div>
 						</div>
 						<div class="card-body">
+							{% include 'component/filter-form.html' with form=filter_form %}
 							{% if not disableTable %}
 								<table class="table table-striped table-custom-border text-center table-rounded table-borderless table-thead-primary"
 									   id="table">
@@ -106,7 +107,9 @@
                     ajax: true,
                 },
                 extra_filters: function (d) {
-                    d.filter_type = true;
+                    $('.filters input, .filters select').each(function (i, e) {
+                        d[e.getAttribute('name')] = $(e).val();
+                    })
                 },
             },
             {
